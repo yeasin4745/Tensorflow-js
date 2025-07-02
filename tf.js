@@ -86,8 +86,10 @@ let eye=tf.eye(5,5);
 
 // Simple model  y=5x+2
 
-let x=tf.tensor([[-2],[1],[0],[3],[5]]);
-let y=tf.tensor([-8,7,2,17,27],[5,1])
+//data set
+
+let x=tf.truncatedNormal([30],0,10,'int32').reshape([30,1]);
+let y=tf.mul(x,5).add(2);
 
 async function train(value=0){
  const model=tf.sequential();
