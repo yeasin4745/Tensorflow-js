@@ -83,6 +83,116 @@ let eye=tf.eye(5,5);
 
 
 
+let d=tf.tensor([ [5,6],[4,7] ])
+let diag=tf.diag(d);
+//print(diag,d)
+let linspace=tf.linspace(9,7,10);
+//linspace.print();
+//tf.ones([5,7]).print()
+//tf.onesLike(d).print()
+//tf.range(1,5,1).print()
+let v=tf.randomNormal([2,2],5,3)
+let n=tf.truncatedNormal([8,5],6,2); //Effician
+//print(n)
+let vari=tf.variable(v)
+// re asine value
+//vari.assign(n);
+//print(vari)
+
+let label=tf.tensor([2,1,5,4],[1,4],'int32')
+//tf.oneHot(label,4).print()
+
+//tf.zeros([5,4]).print()
+//tf.zerosLike(n).print()
+
+
+
+const A=tf.tensor([[4,2],[3,5]]);
+let s1=tf.scalar(5)
+let s2=tf.scalar(6)
+let I=tf.eye(2,2)
+
+
+let ans=tf.matMul(A,A).sub(A.mul(s1)).add(I.mul(s2))
+
+// expect float dtype
+let s=A.sigmoid()
+//print(s)
+
+
+
+// Equation solve
+//6g-8f-c=25
+//-2g+8f+c=-17
+//8g+4f+c=-29
+
+let D=tf.tensor([[6,-8,-1],[-2,8,1],[8,4,1]])
+let Dg=tf.tensor([[25,-8,-1],[-17,8,1],[-20,4,1]])
+let Df=tf.tensor([[6,25,-1],[-2,-17,1],[8,-20,1]])
+let Dc=tf.tensor([[6,-8,25],[-2,8,-17],[8,4,-20]])
+
+
+//print(D,Dg,Df,Dc)
+//let det=tf.linalg.det(D);
+
+// softmax function
+
+var data=tf.variable(tf.tensor([2,1,1.5]))
+//tf.softmax(data).print()
+
+
+let buffer=D.bufferSync()
+
+//console.log(buffer.get(1,2))
+//log(buffer.values)
+
+let buff=tf.buffer([2,2])
+buff.set(55,0,0)
+let bufff=buff.toTensor()
+//print(bufff)
+
+buff=tf.tensor([5,3,7]).buffer();
+buff.then((i)=>{
+//log(i)
+})
+
+
+  
+
+
+
+
+
+
+// load csv file
+async function loadData(){
+
+let csvUrl=`https://raw.githubusercontent.com/yeasin4745/csv-datasets/refs/heads/main/data.csv`
+let dataset=await tf.data.csv(csvUrl,{
+ columnConfigs:{ Weight:{ isLabel:true}, Height:{}},
+hasHeader: true,
+configuredColumnsOnly:true
+
+})
+
+let batched=dataset.batch(2);
+await batched.forEachAsync(batch=>{
+ log(batch.xs ,'=>',batch.ys)
+})
+
+
+
+/*
+await dataset.forEachAsync((row)=>{
+log(row.xs, " ==>", row.ys);
+})
+*/
+
+
+}
+
+//loadData();
+
 
 // Simple model  y=5x+2
 
