@@ -1,5 +1,5 @@
 <div>
-  <img wiidth=600 src="https://www.gstatic.com/devrel-devsite/prod/v46d043083f27fa7361aea8506dabbd161e0b84f5a7c6df8d5e3cfad447dd4376/tensorflow/images/lockup.svg" alt="logo" />
+  <img wiidth=600 height=500  src="https://www.gstatic.com/devrel-devsite/prod/v46d043083f27fa7361aea8506dabbd161e0b84f5a7c6df8d5e3cfad447dd4376/tensorflow/images/lockup.svg" alt="logo" />
 </div>
 
 
@@ -97,12 +97,10 @@ let y = tf.mul(x, 5).add(2);
 ```js
 let tf = require('@tensorflow/tfjs');
 
-// ম্যাট্রিক্স ও বায়াস নির্ধারণ
 let w = tf.tensor2d([[2, 3], [5, -1], [-1, 4]]);
 let input = tf.tensor([[1, 1], [2, 1], [3, 2]]);
 let bias = tf.tensor([[1], [2], [0]]);
 
-// ইনপুট ডেটা থেকে ম্যানুয়ালি আউটপুট তৈরি
 async function run() {
   let inputArray = await input.array();
   let output = [];
@@ -119,7 +117,7 @@ async function run() {
   return tf.tensor(output);
 }
 
-// মডেল প্রশিক্ষণ ও প্রেডিকশন
+// training and prediction 
 (async function (newInput) {
   let output = await run();
 
