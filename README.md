@@ -1,143 +1,121 @@
-<div>
-  <img wiidth=600 height=500  src="https://www.gstatic.com/devrel-devsite/prod/v46d043083f27fa7361aea8506dabbd161e0b84f5a7c6df8d5e3cfad447dd4376/tensorflow/images/lockup.svg" alt="logo" />
-</div>
+# TensorFlow.js — হাতে-কলমে JavaScript উদাহরণ
 
+এই repository-তে Node.js দিয়ে TensorFlow.js শেখার কয়েকটি ছোট, runnable example আছে। Tensor operation, linear regression, multi-output model এবং Ollama embedding দিয়ে text similarity—প্রতিটি example আলাদা JavaScript file-এ রাখা হয়েছে, যেন একেকটি বিষয় আলাদাভাবে চালানো ও বোঝা যায়।
 
+> **প্রয়োজনীয়তা:** Node.js 18 বা পরবর্তী version এবং npm। `index.js` চালাতে Ollama-ও চালু থাকতে হবে। House-price example চালাতে internet connection প্রয়োজন, কারণ এটি GitHub থেকে CSV dataset নেয়।
 
+## Installation
 
-# TensorFlow.js বেসিক  TensorFlow.js এর বেসিক টপিক নিয়ে বিস্তারিত আলোচনা করা হয়েছে। এখানে টেনসর অপারেশন থেকে শুরু করে একটি সহজ মডেল তৈরির উদাহরণ পর্যন্ত দেখানো হয়েছে।
-
----
-
-## 📌 **টেনসর অপারেশন (Tensor Operation)**
-
-- দুটি ম্যাট্রিক্সের উপর অ্যাড, সাবস্ট্রাকশন, ডিভিশন এবং মাল্টিপ্লিকেশন করা।
-- স্কেলার ভ্যালু দিয়ে মাল্টিপ্লিকেশন।
-- ম্যাট্রিক্স মাল্টিপ্লিকেশন (Matrix Multiplication)।
-- টেনসর এর বিভিন্ন পরিসংখ্যানিক ফাংশন ব্যবহার যেমন `mean`, `max`, `sum`।
-- টেনসর রিশেপ (Reshape) করা — 1D থেকে 2D।
-- টেনসরসরকে অ্যারে বা ডেটাতে রূপান্তর করা।
-
----
-
-## 🔄 **ডেটা টাইপ রূপান্তর ও ম্যাট্রিক্স অপারেশন**
-
-- `cast()` ফাংশনের মাধ্যমে ফাংশনের মাধ্যমে ডেট টাইইপরিবর্তন (যেমন booleann)।
-- টেনসর ক্লোন করা এবং ট্রান্সপোজnspose) করা।
-- আইডেন্টিটি ম্যাট্রিক্স তৈরি (`eye()` ফাংশন)।
-- একাধিক টেনসর একত্রে স্ট্যাক করা (`stack()` ফাংশন)।
-
----
-
-# Simple Linear Regression Model with TensorFlow.js 🎯
-
-## 📜 Description
-
-এই প্রজেক্টে TensorFlow.js ব্যবহার করে একটি সিম্পল লিনিয়ার রিগ্রেশন মডেল তৈরি করা হয়েছে। মডেলটি `y = 5x + 2` সমীকরণ শেখার জন্য ট্রেন করা হয়েছে।
-
-## 📊 Dataset
-
-র্যান্ডমলি ডেটা তৈরি করা হয়েছে:
-
-- **X:** 30টি র‍্যান্ডম সংখ্যা (Normal Distribution থেকে)  
-- **Y:** সমীকরণ অনুযায়ী তৈরি → `y = 5x + 2`
-
-```javascript
-let x = tf.truncatedNormal([30], 0, 10, 'int32').reshape([30,1]);
-let y = tf.mul(x, 5).add(2);
+```bash
+git clone https://github.com/yeasin4745/Tensorflow-js.git
+cd Tensorflow-js
+npm install
 ```
 
+## কোন ফাইলে কী আছে
 
-# [model.js](https://github.com/yeasin4745/Tensorflow-js/blob/main/model.js)
+| File | কাজ |
+| --- | --- |
+| `index.js` | Ollama থেকে দুইটি text-এর embedding নিয়ে TensorFlow.js-এ cosine similarity ও angle গণনা |
+| `tf.js` | Tensor operations এবং `y = 5x + 2` শেখার linear regression demo |
+| `model.js` | matrix-নির্ধারিত তিনটি equation থেকে multi-output regression model train ও predict |
+| `house-price-predction.js` | CSV-এর size, bedroom ও build year feature দিয়ে house-price regression demo |
+| `tests/index.test.js` | embedding validation ও cosine similarity-র offline unit tests |
 
+## Examples চালানো
 
+### 1. Tensor operations ও linear regression
 
-# 📐 ম্যাট্রিক্স ভিত্তিক কাস্টম নিউরাল নেটওয়ার্ক মডেল
+```bash
+node tf.js
+node tf.js 3.5
+```
 
-এই প্রজেক্টে একটি ম্যানুয়ালি নির্ধারিত ম্যাট্রিক্স ও বাইয়াস ব্যবহার করে আউটপুট ডেটা তৈরি করা হয়েছে এবং তা ব্যবহার করে একটি TensorFlow.js মডেল প্রশিক্ষণ (training) করা হয়েছে।
+প্রথম command tensor addition, subtraction, division, matrix multiplication, statistics, reshape ও identity matrix দেখায়। এরপর ছোট model train করে `y = 5x + 2`-এর জন্য default `x = 2` predict করে। দ্বিতীয় command-এ নিজের input দেওয়া যায়।
 
----
+### 2. Multi-output model
 
-## 🎯 সমীকরণ
+```bash
+node model.js
+node model.js 2 3
+```
 
-আমরা নিচের সমীকরণ অনুযায়ী আউটপুট গণনা করেছি:
-> ### 🧠 Equation Reference:
-> $$
-> y_1 = 2x_1 + 3x_2 + 1
-> $$
-> $$
-> y_2 = 5x_1 - x_2 + 2
-> $$
-> $$
-> y_3 = -x_1 + 4x_2
-> $$
-## ⚙️ প্রযুক্তি
+Model-টি নিচের mapping শিখতে চেষ্টা করে:
 
-- 📦 TensorFlow.js
-- 🧠 Dense Neural Network (1 layer)
-- 🖥️ Node.js (Runtime)
+- `y₁ = 2x₁ + 3x₂ + 1`
+- `y₂ = 5x₁ − x₂ + 2`
+- `y₃ = −x₁ + 4x₂`
 
----
+### 3. House-price regression
 
-## 📄 model.js
+```bash
+node house-price-predction.js
+node house-price-predction.js 1200 3 2015
+```
 
-নিচের `model.js` ফাইলে আমাদের পুরো কাজটি করা হয়েছে:
+ইনপুটের ক্রম হলো `size_sqft bedrooms year_built`। Default dataset URL হলো [`housing_market_data.csv`](https://github.com/yeasin4745/csv-datasets/blob/main/datasets/regression/housing_market_data.csv)। বিকল্প CSV দিতে চাইলে `HOUSING_CSV_URL` environment variable ব্যবহার করুন। CSV-তে `Size_sqft`, `Bedrooms`, `Year_Built`, এবং `Price` numeric column থাকতে হবে।
 
-### 📌 `model.js` ফাইলে যা আছে:
+```bash
+HOUSING_CSV_URL="https://example.com/housing.csv" node house-price-predction.js 1200 3 2015
+```
 
-- ইনপুট ডে টা → `x₁, x₂`
-- ম্যাট্রিক্স অপারেশন করে ম্যানুয়ালি আউটপুট তৈরি (`y₁, y₂, y₃`)
-- একটি Sequential মডেল তৈরি
-- মডেল ট্রেইন করে নতুন ইনপুটের জন্য প্রেডিকশন
+এটি শেখার demo—বাস্তব property valuation-এর জন্য trained বা validated model নয়। Prediction-এর মান dataset ও training run অনুযায়ী বদলাতে পারে।
 
----
+### 4. Ollama দিয়ে text similarity
 
-### 🔢 কোড:
+প্রথমে [Ollama](https://ollama.com/) install ও চালু করে embedding model নামান:
 
-```js
-let tf = require('@tensorflow/tfjs');
+```bash
+ollama pull embeddinggemma
+ollama serve
+```
 
-let w = tf.tensor2d([[2, 3], [5, -1], [-1, 4]]);
-let input = tf.tensor([[1, 1], [2, 1], [3, 2]]);
-let bias = tf.tensor([[1], [2], [0]]);
+তারপর অন্য terminal-এ project directory থেকে চালান:
 
-async function run() {
-  let inputArray = await input.array();
-  let output = [];
+```bash
+node index.js "I enjoy learning JavaScript" "I like programming in JavaScript"
+```
 
-  for (let i of inputArray) {
-    let data = tf.tensor(i).reshape([2, 1]);
-    let result = w.matMul(data).add(bias).reshape([1, 3]);
-    let array = await result.array();
-    output.push(array[0]);
-    data.dispose();
-    result.dispose();
-  }
+`index.js` Ollama-র `/api/embed` API-তে দুইটি text পাঠায় এবং cosine similarity (−1 থেকে 1) ও angle দেখায়। সাধারণভাবে similarity যত বেশি, vector দুটি তত কাছাকাছি; নির্দিষ্ট threshold ব্যবহার করার আগে আপনার model ও use case দিয়ে যাচাই করুন।
 
-  return tf.tensor(output);
-}
+ঐচ্ছিক configuration:
 
-// training and prediction 
-(async function (newInput) {
-  let output = await run();
+```bash
+OLLAMA_EMBED_URL="http://127.0.0.1:11434/api/embed" \
+EMBEDDING_MODEL="embeddinggemma" \
+node index.js "first text" "second text"
+```
 
-  let model = tf.sequential();
-  model.add(tf.layers.dense({
-    units: 3,
-    inputShape: [2],
-    activation: 'linear'
-  }));
+`OLLAMA_EMBED_URL` এবং `EMBEDDING_MODEL`-এর default যথাক্রমে `http://127.0.0.1:11434/api/embed` ও `embeddinggemma`।
 
-  model.compile({
-    optimizer: 'sgd',
-    loss: 'meanSquaredError'
-  });
+## Tests ও code check
 
-  await model.fit(input, output, {
-    epochs: 300
-  });
+```bash
+npm test
+npm run check
+```
 
-  let predict = model.predict(newInput);
-  predict.print();
+`npm test` Node.js-এর built-in test runner ব্যবহার করে; এই test চালাতে Ollama বা live network লাগে না।
 
-})(tf.tensor([[1, 2]]));
+## কীভাবে cosine similarity হিসাব হয়
+
+দুই embedding vector `A` ও `B`-এর জন্য:
+
+```text
+cosineSimilarity = (A · B) / (||A|| × ||B||)
+angleDegrees     = acos(cosineSimilarity) × 180 / π
+```
+
+`index.js` vector length, finite numeric values, Ollama response dimensions এবং zero vector পরীক্ষা করে। TensorFlow tensor-গুলো `tf.tidy()` দিয়ে scope শেষে dispose হয়। অন্যান্য training script-ও input, prediction tensor এবং model শেষ হলে dispose করে, যাতে অপ্রয়োজনীয় memory জমে না থাকে।
+
+## Common issues
+
+- **`fetch failed` / Ollama connection refused:** `ollama serve` চলছে কি না এবং `OLLAMA_EMBED_URL` ঠিক কি না যাচাই করুন।
+- **Model not found:** `ollama pull embeddinggemma` চালান, অথবা `EMBEDDING_MODEL`-এ local Ollama model-এর নাম দিন।
+- **CSV download error:** dataset URL reachable কি না দেখুন; দরকার হলে `HOUSING_CSV_URL` দিন। CSV header README-তে উল্লেখ করা নামগুলোর সঙ্গে মিলতে হবে।
+- **`node: command not found`:** Node.js 18+ install করে terminal restart করুন।
+- **Similarity-তে zero-vector error:** Ollama-র returned embedding ফাঁকা বা সব শূন্য হলে cosine similarity নির্ধারিত নয়; model/API response যাচাই করুন।
+
+## Learning note
+
+এই repository-র model-গুলো ছোট educational demo। Production application-এ dataset split, validation metrics, reproducible seeds, model persistence, input/data quality checks এবং বাস্তব use case-এ performance evaluation যুক্ত করুন।

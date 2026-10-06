@@ -1,0 +1,19 @@
+{
+  "name": "tensorflow-js-learning-examples",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Beginner-friendly TensorFlow.js examples for Node.js",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "test": "node --test",
+    "check": "node --check index.js && node --check tf.js && node --check model.js && node --check house-price-predction.js"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "@tensorflow/tfjs": "^4.22.0",
+    "@tensorflow/tfjs-backend-wasm": "^4.22.0"
+  }
+}
