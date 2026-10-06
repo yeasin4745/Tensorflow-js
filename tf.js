@@ -1,387 +1,82 @@
-                                              
-let tf=require("@tensorflow/tfjs");
+'use strict';
 
-function print(...datas){
- datas.forEach(data=>{
-  data.print();
-})
+const tf = require('@tensorflow/tfjs');
+
+function runTensorOperations() {
+  console.log('\n--- Tensor operations ---');
+  tf.tidy(() => {
+    const a = tf.fill([2, 2], 10);
+    const b = tf.fill([2, 2], 5);
+    const sample = tf.tensor1d([4, 5, 6, 4]);
+
+    console.log('Addition:');
+    tf.add(a, b).print();
+    console.log('Subtraction:');
+    tf.sub(a, b).print();
+    console.log('Element-wise division:');
+    tf.div(a, b).print();
+    console.log('Matrix multiplication:');
+    tf.matMul(a, b).print();
+    console.log('Mean / max / sum:');
+    tf.stack([tf.mean(sample), tf.max(sample), tf.sum(sample)]).print();
+    console.log('Reshape to 2 × 2:');
+    sample.reshape([2, 2]).print();
+    console.log('Identity matrix:');
+    tf.eye(3).print();
+  });
 }
 
+async function trainLinearRegression(value = 2) {
+  if (!Number.isFinite(value)) {
+    throw new TypeError('Prediction input must be a finite number.');
+  }
 
-let {log}=console;
-// Tensor Operation
-let a=tf.fill([4,4],10);
-let b=tf.fill([4,4],5);
-let add=tf.add(a,b);
-let subtraction=tf.sub(a,b);
-let divition=tf.div(a,b);
-let scalar=tf.scalar(5);
-let multiplication=tf.mul(a,scalar);
+  const values = Array.from({ length: 21 }, (_, index) => index - 10);
+  const xTrain = tf.tensor2d(values, [values.length, 1]);
+  const yTrain = tf.tensor2d(values.map((x) => 5 * x + 2), [values.length, 1]);
+  const model = tf.sequential();
 
-//print(multiplication);
-// matrix multiplication
-const mul=tf.matMul(a,b);
-//print(mul);
+  try {
+    model.add(tf.layers.dense({
+      units: 1,
+      inputShape: [1],
+      kernelInitializer: 'zeros',
+      biasInitializer: 'zeros',
+    }));
+    model.compile({ optimizer: tf.train.adam(0.05), loss: 'meanSquaredError' });
+    await model.fit(xTrain, yTrain, { epochs: 250, verbose: 0 });
 
-let tensor1d=tf.tensor1d([4,5,6,4]);
-let mean=tf.mean(tensor1d);
-let max=tf.max(tensor1d);
-let sum=tf.sum(tensor1d)
-//print(mean,max,sum)
-
-
-// 1d to 2d
-let reshape=tensor1d.reshape([2,2]);
-//print(reshape)
-
-
-// tensor to array
-tensor1d.array().then(item=>{
-//log(item)
-})
-
-// convert multi dymantion to 1d
-a.data().then((item)=>{
-//log(item)
-})
-
-async function array(t){
- let data=await t.array();
-log(data)
+    const input = tf.tensor2d([[value]]);
+    const prediction = model.predict(input);
+    try {
+      const [predicted] = await prediction.data();
+      console.log(`\nLearned y = 5x + 2; prediction for x=${value}: ${predicted.toFixed(3)}`);
+      return predicted;
+    } finally {
+      input.dispose();
+      prediction.dispose();
+    }
+  } finally {
+    xTrain.dispose();
+    yTrain.dispose();
+    model.dispose();
+  }
 }
 
-//array(a)
+async function main() {
+  await tf.ready();
+  console.log(`TensorFlow.js backend: ${tf.getBackend()}`);
+  runTensorOperations();
 
-
-const matrix=tf.tensor([
-[1,1,0],
-[3,0,1],
-[0,1,1]
-]);
-//print(matrix)
-//data type convert
-let bool=matrix.cast('bool')
-//print(bool)
-
-
-
-// add all tensor
-let c=tf.fill([4,4],1);
-const stacked=tf.stack([a,b,c])
-//stacked.print(true)
-
-
-// copy matrix
-let cloneMatrix=matrix.clone();
-let transpose=cloneMatrix.transpose();
-//print(transpose,cloneMatrix);
-
-
-// Identity matrix
-let eye=tf.eye(5,5);
-//print(eye);
-
-
-
-let d=tf.tensor([ [5,6],[4,7] ])
-let diag=tf.diag(d);
-//print(diag,d)
-let linspace=tf.linspace(9,7,10);
-//linspace.print();
-//tf.ones([5,7]).print()
-//tf.onesLike(d).print()
-//tf.range(1,5,1).print()
-let v=tf.randomNormal([2,2],5,3)
-let n=tf.truncatedNormal([8,5],6,2); //Effician
-//print(n)
-let vari=tf.variable(v)
-// re asine value
-//vari.assign(n);
-//print(vari)
-
-let label=tf.tensor([2,1,5,4],[1,4],'int32')
-//tf.oneHot(label,4).print()
-
-//tf.zeros([5,4]).print()
-//tf.zerosLike(n).print()
-
-
-
-const A=tf.tensor([[4,2],[3,5]]);
-let s1=tf.scalar(5)
-let s2=tf.scalar(6)
-let I=tf.eye(2,2)
-
-
-let ans=tf.matMul(A,A).sub(A.mul(s1)).add(I.mul(s2))
-
-// expect float dtype
-let s=A.sigmoid()
-//print(s)
-
-
-
-// Equation solve
-//6g-8f-c=25
-//-2g+8f+c=-17
-//8g+4f+c=-29
-
-let D=tf.tensor([[6,-8,-1],[-2,8,1],[8,4,1]])
-let Dg=tf.tensor([[25,-8,-1],[-17,8,1],[-20,4,1]])
-let Df=tf.tensor([[6,25,-1],[-2,-17,1],[8,-20,1]])
-let Dc=tf.tensor([[6,-8,25],[-2,8,-17],[8,4,-20]])
-
-
-//print(D,Dg,Df,Dc)
-//let det=tf.linalg.det(D);
-
-// softmax function
-
-var data=tf.variable(tf.tensor([2,1,1.5]))
-//tf.softmax(data).print()
-
-
-let buffer=D.bufferSync()
-
-//console.log(buffer.get(1,2))
-//log(buffer.values)
-
-let buff=tf.buffer([2,2])
-buff.set(55,0,0)
-let bufff=buff.toTensor()
-//print(bufff)
-
-buff=tf.tensor([5,3,7]).buffer();
-buff.then((i)=>{
-//log(i)
-})
-
-
-  
-
-
-
-
-
-
-// load csv file
-async function loadData(){
-
-let csvUrl=`https://raw.githubusercontent.com/yeasin4745/csv-datasets/refs/heads/main/data.csv`
-let dataset=await tf.data.csv(csvUrl,{
- columnConfigs:{ Weight:{ isLabel:true}, Height:{}},
-hasHeader: true,
-configuredColumnsOnly:true
-
-})
-
-let batched=dataset.batch(2);
-await batched.forEachAsync(batch=>{
- log(batch.xs ,'=>',batch.ys)
-})
-
-
-
-/*
-await dataset.forEachAsync((row)=>{
-log(row.xs, " ==>", row.ys);
-})
-*/
-
-
+  const value = process.argv[2] === undefined ? 2 : Number(process.argv[2]);
+  await trainLinearRegression(value);
 }
 
-//loadData();
-
-
-// Simple model  y=5x+2
-
-//data set
-
-let x=tf.truncatedNormal([30],0,10,'int32').reshape([30,1]);
-let y=tf.mul(x,5).add(2);
-
-async function train(value=0){
- const model=tf.sequential();
-model.add(tf.layers.dense({
- units:1,
-inputShape:[1]
-}))
-
-model.compile({
-loss:'meanSquaredError',
-optimizer:'sgd'
-})
-
-await model.fit(x,y,{
-epochs:200
-}).then(()=>{
-console.log("Model train complite")
-});
-
-
-let predection=model.predict(tf.tensor([[value]]))
-
-print(predection)
-
-model.dispose();
+if (require.main === module) {
+  main().catch((error) => {
+    console.error(`Failed: ${error.message}`);
+    process.exitCode = 1;
+  });
 }
 
-// test
-//train(2);
-
-
-
-
-let d=tf.tensor([ [5,6],[4,7] ])
-let diag=tf.diag(d);
-//print(diag,d)
-let linspace=tf.linspace(9,7,10);
-//linspace.print();
-//tf.ones([5,7]).print()
-//tf.onesLike(d).print()
-//tf.range(1,5,1).print()
-let v=tf.randomNormal([2,2],5,3)
-let n=tf.truncatedNormal([8,5],6,2); //Effician
-//print(n)
-let vari=tf.variable(v)
-// re asine value
-//vari.assign(n);
-//print(vari)
-
-let label=tf.tensor([2,1,5,4],[1,4],'int32')
-//tf.oneHot(label,4).print()
-
-//tf.zeros([5,4]).print()
-//tf.zerosLike(n).print()
-
-
-
-const A=tf.tensor([[4,2],[3,5]]);
-let s1=tf.scalar(5)
-let s2=tf.scalar(6)
-let I=tf.eye(2,2)
-
-
-let ans=tf.matMul(A,A).sub(A.mul(s1)).add(I.mul(s2))
-
-// expect float dtype
-let s=A.sigmoid()
-//print(s)
-
-
-
-// Equation solve
-//6g-8f-c=25
-//-2g+8f+c=-17
-//8g+4f+c=-29
-
-let D=tf.tensor([[6,-8,-1],[-2,8,1],[8,4,1]])
-let Dg=tf.tensor([[25,-8,-1],[-17,8,1],[-20,4,1]])
-let Df=tf.tensor([[6,25,-1],[-2,-17,1],[8,-20,1]])                                                  
-  let Dc=tf.tensor([[6,-8,25],[-2,8,-17],[8,4,-20]])
-
-
-//print(D,Dg,Df,Dc)
-//let det=tf.linalg.det(D);
-
-// softmax function
-
-var data=tf.variable(tf.tensor([2,1,1.5]))
-//tf.softmax(data).print()
-
-
-let buffer=D.bufferSync()
-
-//console.log(buffer.get(1,2))
-//log(buffer.values)
-
-let buff=tf.buffer([2,2])
-buff.set(55,0,0)
-let bufff=buff.toTensor()
-//print(bufff)
-
-buff=tf.tensor([5,3,7]).buffer();
-buff.then((i)=>{
-//log(i)
-})
-
-
-
-async function normMinMax(arr){
-let min=Math.min(...arr)
-let max=Math.max(...arr)
-let len=arr.length;
-let minMax=[],zScore=[]
-let mean=tf.mean(tf.tensor(arr)).arraySync()
-
-//sd
-let sum=arr.map((itm)=>{
-
-
-})
-
-
-arr.forEach((itm,idx)=>{
-let ans=(itm - min) / (max-min)
- minMax.push(ans)
-
-})
-return arr
-}
-
-let arrayy=[5,2,4,1,7]
-
-normMinMax(arrayy)
-
-//print(tf.tensor(arrayy))
-//console.log(arrayy)
-
-
-
-
-
-
-
-
-
-
-
-
-
-// load csv file
-async function loadData(){
-let path=require('path')
- function* getData(){
-for(var i=1;i<=10;i++){
- yield {xs:i,yx: Math.random()*i}
-}
-
-}
-
-/*
-let csvUrl=`https://raw.githubusercontent.com/yeasin4745/csv-datasets/refs/heads/main/data.csv`
-let dataset=await tf.data.csv(csvUrl,{
- columnConfigs:{ Weight:{ isLabel:true}, Height:{}},
-hasHeader: true,
-configuredColumnsOnly:true
-})
-
-let batched=dataset.batch(2);
-await batched.forEachAsync(batch=>{
- log(batch.xs ,'=>',batch.ys)
-})
-
-*/
-let data=tf.data.generator(getData)
-
-let textLine=await tf.data.TextLineDataset(path.join(__dirname,'text.txt'))
-
-log(textLine);
-
-
-}
-
-
-//loadData();
-
+module.exports = { runTensorOperations, trainLinearRegression };

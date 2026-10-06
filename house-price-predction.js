@@ -1,122 +1,135 @@
-const tf = require('@tensorflow/tfjs-node'); // Node.js এর জন্য tfjs-node ব্যবহার করা ভালো
-const { log } = console;
+'use strict';
 
-/**
- * 1. GitHub থেকে CSV ডেটাসেট লোড করে।
- */
-async function loadDataSet() {
-    
-    const csvUrl = 'https://raw.githubusercontent.com/yeasin4745/csv-datasets/main/HousingMarketData.csv';
+const tf = require('@tensorflow/tfjs');
 
-    const dataset = tf.data.csv(csvUrl, {
-        hasHeader: true,
-        columnConfigs: {
-            Price: { isLabel: true }
-        }
-    });
+const DATASET_URL =
+  process.env.HOUSING_CSV_URL ||
+  'https://raw.githubusercontent.com/yeasin4745/csv-datasets/main/datasets/regression/housing_market_data.csv';
+const FEATURE_COLUMNS = ['Size_sqft', 'Bedrooms', 'Year_Built'];
+const LABEL_COLUMN = 'Price';
+const DEFAULT_INPUT = [1020, 4, 2019];
 
-    const size = [], bedrooms = [], year = [], price = [];
+function parseCsv(text) {
+  const [headerLine, ...dataLines] = text.trim().split(/\r?\n/);
+  if (!headerLine || dataLines.length === 0) {
+    throw new Error('The housing CSV is empty or has no data rows.');
+  }
 
-    await dataset.forEachAsync(row => {
-        size.push(parseFloat(row.Size));
-        bedrooms.push(parseFloat(row.Bedrooms));
-        year.push(parseFloat(row.YearBuilt));
-        price.push(parseFloat(row.Price));
-    });
+  const headers = headerLine.split(',').map((header) => header.trim());
+  const requiredColumns = [...FEATURE_COLUMNS, LABEL_COLUMN];
+  const indexes = requiredColumns.map((column) => headers.indexOf(column));
+  if (indexes.some((index) => index < 0)) {
+    throw new Error(`CSV must contain columns: ${requiredColumns.join(', ')}.`);
+  }
 
-    return { size, bedrooms, year, price };
-}
-
-/**
- * 2. ডেটা নরম্যালাইজ করে এবং গড় (mean) ও স্ট্যাডার্ড ডেভিয়েশন (std) রিটার্ন করে।
- */
-function getNorm(array) {
-    const tensor = tf.tensor1d(array);
-    const mean = tensor.mean().arraySync();
-    const variance = tensor.sub(mean).square().mean().arraySync();
-    const std = Math.sqrt(variance);
-    const norm = array.map(n => (n - mean) / std);
-    return { norm, mean, std }; // mean এবং std রিটার্ন করা হয়েছে Prediction এর জন্য
-}
-
-/**
- * 3. একটি সিম্পল লিনিয়ার রিগ্রেশন মডেল তৈরি করে।
- */
-function createModel() {
-    const model = tf.sequential();
-    model.add(tf.layers.dense({
-        inputShape: [3], // ইনপুট ফিচার সংখ্যা: Size, Bedrooms, YearBuilt
-        units: 1,
-        activation: 'linear'
-    }));
-    return model;
-}
-
-/**
- * 4. Main Function: ডেটা লোড, প্রসেস, মডেল ট্রেইন এবং প্রেডিক্ট করার জন্য।
- */
-(async function main(inputRaw) {
-    const data = await loadDataSet();
-    const { size, bedrooms, year, price } = data;
-
-    // প্রতিটি ফিচারের জন্য ডেটা নরম্যালাইজ করা
-    const sizeStats = getNorm(size);
-    const roomStats = getNorm(bedrooms);
-    const yearStats = getNorm(year);
-    const priceStats = getNorm(price);
-
-    const inputs = [];
-    const labels = [];
-
-    // মডেলের জন্য ইনপুট এবং লেবেল প্রস্তুত করা
-    for (let i = 0; i < size.length; i++) {
-        inputs.push([
-            sizeStats.norm[i],
-            roomStats.norm[i],
-            yearStats.norm[i]
-        ]);
-        labels.push(priceStats.norm[i]);
+  const rows = dataLines.filter((line) => line.trim()).map((line, rowIndex) => {
+    const cells = line.split(',').map((cell) => cell.trim());
+    const values = indexes.map((index) => Number(cells[index]));
+    if (values.some((value) => !Number.isFinite(value))) {
+      throw new Error(`CSV row ${rowIndex + 2} contains an invalid numeric value.`);
     }
+    return values;
+  });
 
-    const xTrain = tf.tensor2d(inputs);
-    const yTrain = tf.tensor2d(labels, [labels.length, 1]);
+  if (rows.length < 2) {
+    throw new Error('At least two valid housing rows are required for training.');
+  }
+  return rows;
+}
 
-    const model = createModel();
+async function loadDataSet(url = DATASET_URL, fetchImpl = globalThis.fetch) {
+  if (typeof fetchImpl !== 'function') {
+    throw new Error('A Fetch API implementation is required (Node.js 18 or newer).');
+  }
+  const response = await fetchImpl(url);
+  if (!response.ok) {
+    throw new Error(`Could not download housing CSV (${response.status}): ${url}`);
+  }
+  return parseCsv(await response.text());
+}
 
-    model.compile({
-        loss: 'meanSquaredError',
-        optimizer: tf.train.adam(0.001),
-        metrics: ['mse']
-    });
+function getNormalizationStats(values) {
+  const mean = values.reduce((sum, value) => sum + value, 0) / values.length;
+  const variance = values.reduce((sum, value) => sum + (value - mean) ** 2, 0) / values.length;
+  const standardDeviation = Math.sqrt(variance) || 1;
+  return { mean, standardDeviation };
+}
 
-    log('Training started...');
+function normalize(value, stats) {
+  return (value - stats.mean) / stats.standardDeviation;
+}
+
+function parsePredictionInput(args) {
+  if (args.length === 0) return DEFAULT_INPUT;
+  const values = args.map(Number);
+  if (values.length !== FEATURE_COLUMNS.length || values.some((value) => !Number.isFinite(value))) {
+    throw new TypeError('Usage: node house-price-predction.js <size_sqft> <bedrooms> <year_built>');
+  }
+  return values;
+}
+
+async function trainAndPredict(inputRaw = DEFAULT_INPUT) {
+  if (!Array.isArray(inputRaw) || inputRaw.length !== FEATURE_COLUMNS.length || inputRaw.some((value) => !Number.isFinite(value))) {
+    throw new TypeError('Prediction input must contain three finite numbers: size, bedrooms, and year built.');
+  }
+
+  const rows = await loadDataSet();
+  const featureStats = FEATURE_COLUMNS.map((_, column) =>
+    getNormalizationStats(rows.map((row) => row[column])),
+  );
+  const priceStats = getNormalizationStats(rows.map((row) => row[3]));
+  const normalizedInputs = rows.map((row) =>
+    row.slice(0, 3).map((value, column) => normalize(value, featureStats[column])),
+  );
+  const normalizedPrices = rows.map((row) => normalize(row[3], priceStats));
+  const xTrain = tf.tensor2d(normalizedInputs);
+  const yTrain = tf.tensor2d(normalizedPrices, [normalizedPrices.length, 1]);
+  const model = tf.sequential();
+
+  try {
+    model.add(tf.layers.dense({ units: 1, inputShape: [FEATURE_COLUMNS.length], activation: 'linear' }));
+    model.compile({ optimizer: tf.train.adam(0.01), loss: 'meanSquaredError' });
+    console.log(`Training on ${rows.length} CSV rows...`);
     await model.fit(xTrain, yTrain, {
-        epochs: 100,
-        batchSize: 4,
-        validationSplit: 0.2, // ডেটাসেটের ২০% ভ্যালিডেশনের জন্য ব্যবহার করা হবে
-        callbacks: {
-            onEpochEnd: (epoch, logs) => {
-                log(`Epoch ${epoch + 1}: loss = ${logs.loss.toFixed(4)}, val_loss = ${logs.val_loss.toFixed(4)}`);
-            }
-        }
+      epochs: 200,
+      batchSize: Math.min(8, rows.length),
+      validationSplit: rows.length >= 5 ? 0.2 : 0,
+      verbose: 0,
     });
 
-    log('\n✅ Training finished!\n');
+    const normalizedInput = inputRaw.map((value, index) => normalize(value, featureStats[index]));
+    const inputTensor = tf.tensor2d([normalizedInput]);
+    const prediction = model.predict(inputTensor);
+    try {
+      const [normalizedPrice] = await prediction.data();
+      const predictedPrice = normalizedPrice * priceStats.standardDeviation + priceStats.mean;
+      console.log(`Predicted price for ${inputRaw[0]} sqft, ${inputRaw[1]} bedrooms, built ${inputRaw[2]}: ${predictedPrice.toFixed(2)}`);
+      return predictedPrice;
+    } finally {
+      inputTensor.dispose();
+      prediction.dispose();
+    }
+  } finally {
+    xTrain.dispose();
+    yTrain.dispose();
+    model.dispose();
+  }
+}
 
-    // নতুন বাড়ির দাম প্রেডিক্ট করা
-    const inputNorm = [
-        (inputRaw[0] - sizeStats.mean) / sizeStats.std,
-        (inputRaw[1] - roomStats.mean) / roomStats.std,
-        (inputRaw[2] - yearStats.mean) / yearStats.std
-    ];
+if (require.main === module) {
+  Promise.resolve()
+    .then(() => trainAndPredict(parsePredictionInput(process.argv.slice(2))))
+    .catch((error) => {
+    console.error(`Failed: ${error.message}`);
+    process.exitCode = 1;
+    });
+}
 
-    const inputTensor = tf.tensor2d([inputNorm]);
-    const predictionNorm = model.predict(inputTensor);
-    const predNormValue = (await predictionNorm.data())[0];
-
-    // নরম্যালাইজড প্রেডিকশনকে আসল দামে রূপান্তর করা
-    const predictedPrice = predNormValue * priceStats.std + priceStats.mean;
-
-    log(`Predicted Price for ${inputRaw[0]} sqft, ${inputRaw[1]} beds, built ${inputRaw[2]}: ৳${Math.round(predictedPrice)}`);
-
-})([1020, 4, 2019]); // এখানে ইনপুট দিয়ে টেস্ট করুন: [Size, Bedrooms, YearBuilt]
+module.exports = {
+  getNormalizationStats,
+  loadDataSet,
+  normalize,
+  parseCsv,
+  parsePredictionInput,
+  trainAndPredict,
+};
