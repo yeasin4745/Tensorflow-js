@@ -1,6 +1,7 @@
 <div align="center">
-  <img width="600" src="https://www.gstatic.com/devrel-devsite/prod/v46d043083f27fa7361aea8506dabbd161e0b84f5a7c6df8d5e3cfad447dd4376/tensorflow/images/lockup.svg" alt="TensorFlow.js logo" />
+  <img width="180" src="https://avatars.githubusercontent.com/u/15658638?s=200&v=4" alt="TensorFlow logo" />
 </div>
+
 
 # 🧠 TensorFlow.js Lab
 
