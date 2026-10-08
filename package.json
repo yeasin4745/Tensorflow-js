@@ -1,0 +1,30 @@
+{
+  "name": "tensorflow-js-lab",
+  "version": "1.0.0",
+  "description": "TensorFlow.js experiments: tensor operations, regression models, and Ollama-based embedding similarity — optimized for Termux/Android with WASM backend",
+  "type": "module",
+  "main": "src/tensor-basics.js",
+  "scripts": {
+    "tensor-basics": "node src/tensor-basics.js",
+    "models": "node src/models.js",
+    "house-price": "node src/house-price-prediction.js",
+    "embed": "node src/embedding-similarity.js",
+    "embed:test": "node src/embedding-similarity.js \"I love learning about neural networks\" \"Deep learning models are fascinating to study\""
+  },
+  "keywords": [
+    "tensorflowjs",
+    "machine-learning",
+    "embeddings",
+    "ollama",
+    "termux"
+  ],
+  "author": "MD Yeasin Ali (yeasin4745)",
+  "license": "MIT",
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "dependencies": {
+    "@tensorflow/tfjs": "^4.22.0",
+    "@tensorflow/tfjs-backend-wasm": "^4.22.0"
+  }
+}
